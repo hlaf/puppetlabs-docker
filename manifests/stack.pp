@@ -69,6 +69,7 @@ define docker::stack(
       command => $exec_stack,
       unless  => $unless_stack,
       path    => ['/bin', '/usr/bin'],
+      cwd     => dirname($compose_file),
     }
   }
 
