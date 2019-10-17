@@ -1,4 +1,4 @@
- # == Define: docker::stack
+# == Define: docker::stack
 #
 # A define that deploys Docker stacks or compose v3
 #
@@ -9,14 +9,14 @@
 #  Defaults to present
 #
 # [*stack_name*]
-#   The name of the stack that you are deploying 
+#   The name of the stack that you are deploying
 #   Defaults to undef
 #
 # [*bundle_file*]
 #  Path to a Distributed Application Bundle file
 #  Please note this is experimental
 #  Defaults to undef
-# 
+#
 # [*compose_file*]
 #  Path to a Compose file
 #  Defaults to undef
@@ -36,13 +36,13 @@
 
 define docker::stack(
 
-  $ensure = 'present',
-  $stack_name = undef,
-  $bundle_file = undef,
-  $compose_file = undef,
-  $prune = undef,
+  $ensure             = 'present',
+  $stack_name         = undef,
+  $bundle_file        = undef,
+  $compose_file       = undef,
+  $prune              = undef,
   $with_registry_auth = undef,
-
+  $resolve_image      = undef,
   ){
 
   include docker::params
@@ -60,10 +60,11 @@ define docker::stack(
       compose_file => $compose_file,
       prune => $prune,
       with_registry_auth => $with_registry_auth,
+      resolve_image => $resolve_image,
       })
 
       $exec_stack = "${docker_command} deploy ${docker_stack_flags} ${stack_name}"
-      $unless_stack = "${docker_command} deploy ls | grep ${stack_name}"
+      $unless_stack = "${docker_command} ls | grep ${stack_name}"
 
       exec { "docker stack create ${stack_name}":
       command => $exec_stack,
@@ -77,7 +78,7 @@ define docker::stack(
 
   exec { "docker stack ${stack_name}":
     command => "${docker_command} rm ${stack_name}",
-    onlyif  => "${docker_command} deploy ls | grep ${stack_name}",
+    onlyif  => "${docker_command} ls | grep ${stack_name}",
     path    => ['/bin', '/usr/bin'],
     }
   }
