@@ -68,7 +68,7 @@ define docker::stack(
 
       exec { "docker stack create ${stack_name}":
       command => $exec_stack,
-      unless  => $unless_stack,
+      unless  => $exec_stack,
       path    => ['/bin', '/usr/bin'],
       cwd     => dirname($compose_file),
     }
