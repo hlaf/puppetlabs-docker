@@ -27,7 +27,7 @@
 #
 # [*resolve_image*]
 #  Query the registry to resolve image digest and supported platforms
-#  Only accepts (“always”|“changed”|“never”)
+#  Only accepts ("always"|"changed"|"never")
 #  Defaults to undef
 #
 # [*with_registry_auth*]
@@ -53,33 +53,44 @@ define docker::stack(
   validate_string($stack_name)
   validate_string($bundle_file)
 
+  $exec_path   = ['/bin', '/usr/bin',]
+  $check_stack = "${docker_command} ls | grep '${stack_name}'"
+
   if $ensure == 'present'{
-      $docker_stack_flags = docker_stack_flags ({
-      stack_name => $stack_name,
-      bundle_file => $bundle_file,
-      compose_file => $compose_file,
-      prune => $prune,
-      with_registry_auth => $with_registry_auth,
-      resolve_image => $resolve_image,
-      })
+    $docker_stack_flags = docker_stack_flags ({
+        stack_name => $stack_name,
+        bundle_file => $bundle_file,
+        compose_file => $compose_file,
+        prune => $prune,
+        with_registry_auth => $with_registry_auth,
+        resolve_image => $resolve_image,
+      }
+    )
 
-      $exec_stack = "${docker_command} deploy ${docker_stack_flags} ${stack_name}"
-      $unless_stack = "${docker_command} ls | grep ${stack_name}"
+    $exec_stack = "${docker_command} deploy ${docker_stack_flags} ${stack_name}"
 
-      exec { "docker stack create ${stack_name}":
+    exec { "docker stack create ${stack_name}":
       command => $exec_stack,
-      unless  => $exec_stack,
-      path    => ['/bin', '/usr/bin'],
+      unless  => $check_stack,
+      path    => $exec_path,
       cwd     => dirname($compose_file),
+    }
+
+    exec { "docker stack create ${stack_name} - REFRESH":
+      command     => $exec_stack,
+      path        => $exec_path,
+      cwd         => dirname($compose_file),
+      refreshonly => true,
     }
   }
 
   if $ensure == 'absent'{
+    $destroy_command = "${docker_command} rm ${stack_name}"
 
-  exec { "docker stack ${stack_name}":
-    command => "${docker_command} rm ${stack_name}",
-    onlyif  => "${docker_command} ls | grep ${stack_name}",
-    path    => ['/bin', '/usr/bin'],
+    exec { "docker stack destroy ${stack_name}":
+      command => $destroy_command,
+      onlyif  => $check_stack,
+      path    => $exec_path,
     }
   }
 }
