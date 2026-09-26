@@ -18,9 +18,12 @@ module Puppet::Parser::Functions
       flags << "--prune '#{opts['prune']}'"
     end  
     
-    if opts['with_registry_auth'].to_s != 'undef'
-      flags << "--with-registry-auth '#{opts['with_registry_auth']}'"
-    end      
+    # --with-registry-auth is a valueless boolean flag; emit it bare when set to
+    # a truthy value (not undef/false). Passing it a value (the old behaviour)
+    # adds a spurious positional argument and breaks `docker stack deploy`.
+    if opts['with_registry_auth'].to_s != 'undef' && opts['with_registry_auth'].to_s != 'false'
+      flags << "--with-registry-auth"
+    end
 
     flags.flatten.join(" ")
   end
